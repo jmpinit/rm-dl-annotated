@@ -20,8 +20,16 @@ Generates `./"Super Cool Research Paper (annotated).pdf"` with the scribbles on 
 
 All these things need to be on your path, and you need to have given rmapi access to your ReMarkable Cloud account:
 
+* python
 * [rmapi](https://github.com/juruen/rmapi)
 * [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
 * rsvg-convert
 * pdfunite
 * pdftk
+
+If any of your PDFs have been cropped on your ReMarkable then you will also need:
+
+* opencv-python
+* numpy
+* pdftoppm
+* ImageMagick (`convert`)

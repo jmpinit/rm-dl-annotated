@@ -9,6 +9,7 @@
 # * rsvg-convert
 # * pdfunite
 # * pdftk
+# * pdftoppm (if you use cropping)
 
 set -o errexit
 
@@ -25,6 +26,8 @@ fi
 
 # Do our work in a temporary directory
 
+# https://stackoverflow.com/a/246128
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORK_DIR=$(mktemp -d)
 REMOTE_PATH="$1"
 OBJECT_NAME=$(basename "$REMOTE_PATH")
@@ -44,12 +47,31 @@ if [ ! -f "./$UUID.lines" ]; then
   exit 0
 fi
 
+CONTENT_FILE=$WORK_DIR/$UUID.content
+
+# Check if the PDF has been cropped
+IS_TRANSFORMED=false
+if [ "$("$SCRIPT_DIR"/is-transformed.py "$CONTENT_FILE")" = "Yes" ]; then
+  IS_TRANSFORMED=true
+fi
+
 # Convert the .lines file containing our scribbles to SVGs and then a PDF
 
 rM2svg --coloured_annotations -i "./$UUID.lines" -o "./$UUID"
 
+if [ $IS_TRANSFORMED = true ]; then
+  echo "PDF is cropped."
+  echo "Applying crop to SVGs..."
+fi
+
 PAGES=()
 for svg in ./*.svg; do
+  if [ $IS_TRANSFORMED = true ]; then
+    # Apply the transformation (crop) to the SVGs so the annotations end up in the right places
+    "$SCRIPT_DIR/apply-svg-transform.py" "$svg" "$UUID.content" "$svg"
+  fi
+
+  # Convert SVG to PDF
   PAGE_NAME=$(basename "$svg" .svg)
   rsvg-convert -f pdf -o "$PAGE_NAME.pdf" "$PAGE_NAME.svg"
   PAGES+=($PAGE_NAME.pdf)
@@ -57,14 +79,31 @@ done
 
 pdfunite "${PAGES[@]}" "$UUID"_annotations.pdf
 
+# Transform (crop) the original PDF if necessary
+if [ $IS_TRANSFORMED = true ]; then
+  echo "Applying crop to PDF..."
+
+  IMAGE_DIR=pdf_images
+  mkdir "$IMAGE_DIR"
+  pdftoppm "$UUID".pdf "$IMAGE_DIR/$UUID" -png
+
+  PAGES=()
+  for pdf_image in "$IMAGE_DIR"/*.png; do
+    "$SCRIPT_DIR/apply-image-transform.py" "$pdf_image" "$UUID".content "$pdf_image"
+    PAGES+=($pdf_image)
+  done
+
+  convert "${PAGES[@]}" "$UUID".pdf
+fi
+
 # Layer the annotations onto the original PDF
 
 OUTPUT_PDF="$OBJECT_NAME (annotated).pdf"
-pdftk "$UUID"_annotations.pdf multistamp "$UUID".pdf output "$OUTPUT_PDF"
+pdftk "$UUID".pdf multistamp "$UUID"_annotations.pdf output "$OUTPUT_PDF"
 
 popd >/dev/null
 cp "$WORK_DIR"/"$OUTPUT_PDF" .
 
 rm -r "$WORK_DIR"
 
-echo Generated "$OUTPUT_PDF"
+echo Generated "\"$OUTPUT_PDF\""
