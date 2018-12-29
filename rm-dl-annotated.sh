@@ -35,13 +35,12 @@ OBJECT_NAME=$(basename "$REMOTE_PATH")
 pushd "$WORK_DIR" >/dev/null
 
 # Download the given document using the ReMarkable Cloud API
-
 rmapi get "$REMOTE_PATH" >/dev/null
 unzip "$OBJECT_NAME.zip" >/dev/null
-
 UUID=$(basename "$(ls ./*.pdf)" .pdf)
 
-if [ ! -f "./$UUID.lines" ]; then
+count=`ls -1 ./$UUID/*.rm 2>/dev/null | wc -l`
+if [ $count = 0 ]; then
   echo "PDF is not annotated. Exiting."
   rm -r "$WORK_DIR"
   exit 0
@@ -57,7 +56,10 @@ fi
 
 # Convert the .lines file containing our scribbles to SVGs and then a PDF
 
-rM2svg --coloured_annotations -i "./$UUID.lines" -o "./$UUID"
+for lines in ./$UUID/*.rm; do
+  FILE_NAME=$(basename "$lines" .rm)
+  rM2svg -i $lines -o "./$FILE_NAME".svg
+done
 
 if [ $IS_TRANSFORMED = true ]; then
   echo "PDF is cropped."
@@ -76,6 +78,15 @@ for svg in ./*.svg; do
   rsvg-convert -f pdf -o "$PAGE_NAME.pdf" "$PAGE_NAME.svg"
   PAGES+=($PAGE_NAME.pdf)
 done
+
+NBPAGES=$(pdftk "$UUID".pdf dump_data|grep NumberOfPages| awk '{print $2}')
+NBANNOTATIONS=${#PAGES[@]}
+if (( $NBANNOTATIONS < $NBPAGES )); then
+  convert xc:none -page Letter empty.pdf
+  for ((i=NBANNOTATIONS; i<=NBPAGES; i++)); do
+    PAGES+=(empty.pdf)
+  done
+fi
 
 pdfunite "${PAGES[@]}" "$UUID"_annotations.pdf
 
@@ -97,9 +108,8 @@ if [ $IS_TRANSFORMED = true ]; then
 fi
 
 # Layer the annotations onto the original PDF
-
 OUTPUT_PDF="$OBJECT_NAME (annotated).pdf"
-pdftk "$UUID".pdf multistamp "$UUID"_annotations.pdf output "$OUTPUT_PDF"
+pdftk "$UUID".pdf multistamp "$UUID"_annotations.pdf output "$OUTPUT_PDF" 
 
 popd >/dev/null
 cp "$WORK_DIR"/"$OUTPUT_PDF" .
