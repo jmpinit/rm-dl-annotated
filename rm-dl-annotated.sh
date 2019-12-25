@@ -13,15 +13,47 @@
 
 set -o errexit
 
+function print_help() {
+  echo "rm-dl-annotated.sh [-v] [--help | -h] path/to/cloud/PDF"
+  echo "where:
+    -h or --help  show this help text
+    --keep        keep work directory (for debugging)
+    -v            verbose mode"
+}
+
 function die_with_usage() {
-  echo "Usage: rm-dl-annotated path/to/cloud/PDF"
+  print_help
   exit 1
 }
 
 # Check arguments
 
-if [ "$#" -ne 1 ]; then
+VERBOSE=
+KEEP_WORK=
+REMOTE_PATH=
+
+while test $# -gt 0
+do
+  case "$1" in
+    -v) VERBOSE=yes
+      ;;
+    --keep) KEEP_WORK=yes
+      ;;
+    -h) print_help
+      exit 0
+      ;;
+    --help) print_help
+      exit 0
+      ;;
+    *) REMOTE_PATH="$1"
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$REMOTE_PATH" ]; then
   die_with_usage
+  exit 1
 fi
 
 # Do our work in a temporary directory
@@ -29,10 +61,13 @@ fi
 # https://stackoverflow.com/a/246128
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORK_DIR=$(mktemp -d)
-REMOTE_PATH="$1"
 OBJECT_NAME=$(basename "$REMOTE_PATH")
 
 pushd "$WORK_DIR" >/dev/null
+
+if [ "$VERBOSE" = "yes" ] || [ "$KEEP_WORK" = "yes"]; then
+  echo "Created temporary directory \"$WORK_DIR\""
+fi
 
 # Download the given document using the ReMarkable Cloud API
 
@@ -43,7 +78,11 @@ UUID=$(basename "$(ls ./*.pdf)" .pdf)
 
 if [ ! -f "./$UUID.lines" ]; then
   echo "PDF is not annotated. Exiting."
-  rm -r "$WORK_DIR"
+
+  if [ -z "$KEEP_WORK" ]; then
+    rm -r "$WORK_DIR"
+  fi
+
   exit 0
 fi
 
@@ -104,6 +143,8 @@ pdftk "$UUID".pdf multistamp "$UUID"_annotations.pdf output "$OUTPUT_PDF"
 popd >/dev/null
 cp "$WORK_DIR"/"$OUTPUT_PDF" .
 
-rm -r "$WORK_DIR"
+if [ -z "$KEEP_WORK" ]; then
+  rm -r "$WORK_DIR"
+fi
 
 echo Generated "\"$OUTPUT_PDF\""
