@@ -6,7 +6,7 @@
 # Dependencies:
 # * rmapi https://github.com/juruen/rmapi
 # * rM2svg https://github.com/reHackable/maxio/blob/master/tools/rM2svg
-# * rsvg-convert
+# * svgexport https://github.com/shakiba/svgexport
 # * pdfinfo
 # * pdfunite
 # * pdftk
@@ -79,10 +79,10 @@ fi
 rmapi get "$REMOTE_PATH" >/dev/null
 unzip "$OBJECT_NAME.zip" >/dev/null
 
-UUID=$(basename "$(ls ./*.pdf)" .pdf)
+UUID=$(basename "$(ls ./*.content)" .content)
 
 if [ ! -d "./$UUID" ]; then
-  echo "PDF is not annotated. Exiting."
+  echo "Document is not annotated. Exiting."
 
   if [ -z "$KEEP_WORK" ]; then
     rm -r "$WORK_DIR"
@@ -93,16 +93,25 @@ fi
 
 CONTENT_FILE=$WORK_DIR/$UUID.content
 
-# Check if the PDF has been cropped
+IS_NOTEBOOK=
+if [ ! -f "$UUID".pdf ]; then
+  IS_NOTEBOOK=yes
+fi
+
+# Check if the document has been cropped
 IS_TRANSFORMED=false
 if [ "$("$SCRIPT_DIR"/is-transformed.py "$CONTENT_FILE")" = "Yes" ]; then
   IS_TRANSFORMED=true
 fi
 
-# Convert the .lines file containing our scribbles to SVGs and then a PDF
+# Convert the lines file containing our scribbles to SVGs and then a PDF
 
-PDF_DIMS=$(pdfinfo "$UUID".pdf | grep "Page size" | grep -Eo '[-+]?[0-9]*\.?[0-9]+' | tr '\n' ' ')
-OUT_WIDTH=$(echo $PDF_DIMS | awk -v height=$RM_HEIGHT '{print $1 / $2 * height}')
+OUT_WIDTH="$RM_WIDTH"
+
+if [ -z "$IS_NOTEBOOK" ]; then
+  PDF_DIMS=$(pdfinfo "$UUID".pdf | grep "Page size" | grep -Eo '[-+]?[0-9]*\.?[0-9]+' | tr '\n' ' ')
+  OUT_WIDTH=$(echo $PDF_DIMS | awk -v height=$RM_HEIGHT '{print $1 / $2 * height}')
+fi
 
 for lines_file in "$UUID"/*.rm; do
   svg_file=$(basename "$lines_file" .rm).svg
@@ -110,7 +119,7 @@ for lines_file in "$UUID"/*.rm; do
 done
 
 if [ $IS_TRANSFORMED = true ]; then
-  echo "PDF is cropped."
+  echo "Document is cropped."
   echo "Applying crop to SVGs..."
 fi
 
@@ -123,17 +132,21 @@ for svg in ./*.svg; do
 
   # Convert SVG to PDF
   PAGE_NAME=$(basename "$svg" .svg)
-  rsvg-convert --width "$RM_WIDTH" --height "$RM_HEIGHT" -f pdf -o "$PAGE_NAME.pdf" "$PAGE_NAME.svg"
+
+  svgexport "$PAGE_NAME".svg "$PAGE_NAME".png
+  convert "$PAGE_NAME".png "$PAGE_NAME".pdf
+
   PAGES+=("$PAGE_NAME".pdf)
 done
 
 # Sort the pages by number
 SORTED_PAGES=( $( printf "%s\n" "${PAGES[@]}" | sort -n ) )
 
-pdfunite "${SORTED_PAGES[@]}" "$UUID"_annotations.pdf
+PDF_ANNOTATIONS="$UUID"_annotations.pdf
+pdfunite "${SORTED_PAGES[@]}" "$PDF_ANNOTATIONS"
 
 # Transform (crop) the original PDF if necessary
-if [ $IS_TRANSFORMED = true ]; then
+if [ -z "$IS_NOTEBOOK" ] && [ $IS_TRANSFORMED = true ]; then
   echo "Applying crop to PDF..."
 
   IMAGE_DIR=pdf_images
@@ -149,10 +162,14 @@ if [ $IS_TRANSFORMED = true ]; then
   convert "${PAGES[@]}" "$UUID".pdf
 fi
 
-# Layer the annotations onto the original PDF
 
-OUTPUT_PDF="$OBJECT_NAME (annotated).pdf"
-pdftk "$UUID".pdf multistamp "$UUID"_annotations.pdf output "$OUTPUT_PDF"
+OUTPUT_PDF="$OBJECT_NAME (exported).pdf"
+if [ -z "$IS_NOTEBOOK" ]; then
+  # Layer the annotations onto the original PDF
+  pdftk "$UUID".pdf multistamp "$PDF_ANNOTATIONS" output "$OUTPUT_PDF"
+else
+  cp "$PDF_ANNOTATIONS" "$OUTPUT_PDF"
+fi
 
 popd >/dev/null
 cp "$WORK_DIR"/"$OUTPUT_PDF" .

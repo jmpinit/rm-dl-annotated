@@ -8,13 +8,17 @@ unfortunately the interface on the actual RM sucks for that. I made this simple
 utility so I could scroll through the PDFs on my laptop and see my highlights
 and notes at a glance during review.
 
+It also works for notebooks.
+
+Tested with reMarkable tablet software version 2.0.2.0.
+
 ## Example
 
 ```
 rm-dl-annotated.sh "/Super Cool Research Paper I Scribbled All Over"
 ```
 
-Generates `./"Super Cool Research Paper (annotated).pdf"` with the scribbles on top of the original PDF.
+Generates `./"Super Cool Research Paper (exported).pdf"` with the scribbles on top of the original PDF.
 
 ## Dependencies:
 
@@ -23,7 +27,7 @@ All these things need to be on your path, and you need to have given rmapi acces
 * python
 * [rmapi](https://github.com/juruen/rmapi)
 * [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
-* rsvg-convert
+* [svgexport](https://github.com/shakiba/svgexport)
 * pdfinfo
 * pdfunite
 * pdftk
