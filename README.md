@@ -24,6 +24,7 @@ All these things need to be on your path, and you need to have given rmapi acces
 * [rmapi](https://github.com/juruen/rmapi)
 * [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
 * rsvg-convert
+* pdfinfo
 * pdfunite
 * pdftk
 
@@ -33,3 +34,4 @@ If any of your PDFs have been cropped on your ReMarkable then you will also need
 * numpy
 * pdftoppm
 * ImageMagick (`convert`)
+

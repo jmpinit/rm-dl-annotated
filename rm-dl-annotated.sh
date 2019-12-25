@@ -7,11 +7,16 @@
 # * rmapi https://github.com/juruen/rmapi
 # * rM2svg https://github.com/reHackable/maxio/blob/master/tools/rM2svg
 # * rsvg-convert
+# * pdfinfo
 # * pdfunite
 # * pdftk
 # * pdftoppm (if you use cropping)
 
 set -o errexit
+
+# ReMarkable's screen size in pixels
+RM_WIDTH=1404
+RM_HEIGHT=1872
 
 function print_help() {
   echo "rm-dl-annotated.sh [-v] [--help | -h] path/to/cloud/PDF"
@@ -65,7 +70,7 @@ OBJECT_NAME=$(basename "$REMOTE_PATH")
 
 pushd "$WORK_DIR" >/dev/null
 
-if [ "$VERBOSE" = "yes" ] || [ "$KEEP_WORK" = "yes"]; then
+if [ "$VERBOSE" = "yes" ] || [ "$KEEP_WORK" = "yes" ]; then
   echo "Created temporary directory \"$WORK_DIR\""
 fi
 
@@ -76,7 +81,7 @@ unzip "$OBJECT_NAME.zip" >/dev/null
 
 UUID=$(basename "$(ls ./*.pdf)" .pdf)
 
-if [ ! -f "./$UUID.lines" ]; then
+if [ ! -d "./$UUID" ]; then
   echo "PDF is not annotated. Exiting."
 
   if [ -z "$KEEP_WORK" ]; then
@@ -96,7 +101,13 @@ fi
 
 # Convert the .lines file containing our scribbles to SVGs and then a PDF
 
-rM2svg --coloured_annotations -i "./$UUID.lines" -o "./$UUID"
+PDF_DIMS=$(pdfinfo "$UUID".pdf | grep "Page size" | grep -Eo '[-+]?[0-9]*\.?[0-9]+' | tr '\n' ' ')
+OUT_WIDTH=$(echo $PDF_DIMS | awk -v height=$RM_HEIGHT '{print $1 / $2 * height}')
+
+for lines_file in "$UUID"/*.rm; do
+  svg_file=$(basename "$lines_file" .rm).svg
+  rM2svg --width=$OUT_WIDTH --coloured_annotations -i "./$lines_file" -o "./$svg_file"
+done
 
 if [ $IS_TRANSFORMED = true ]; then
   echo "PDF is cropped."
@@ -112,11 +123,14 @@ for svg in ./*.svg; do
 
   # Convert SVG to PDF
   PAGE_NAME=$(basename "$svg" .svg)
-  rsvg-convert -f pdf -o "$PAGE_NAME.pdf" "$PAGE_NAME.svg"
-  PAGES+=($PAGE_NAME.pdf)
+  rsvg-convert --width "$RM_WIDTH" --height "$RM_HEIGHT" -f pdf -o "$PAGE_NAME.pdf" "$PAGE_NAME.svg"
+  PAGES+=("$PAGE_NAME".pdf)
 done
 
-pdfunite "${PAGES[@]}" "$UUID"_annotations.pdf
+# Sort the pages by number
+SORTED_PAGES=( $( printf "%s\n" "${PAGES[@]}" | sort -n ) )
+
+pdfunite "${SORTED_PAGES[@]}" "$UUID"_annotations.pdf
 
 # Transform (crop) the original PDF if necessary
 if [ $IS_TRANSFORMED = true ]; then
@@ -129,7 +143,7 @@ if [ $IS_TRANSFORMED = true ]; then
   PAGES=()
   for pdf_image in "$IMAGE_DIR"/*.png; do
     "$SCRIPT_DIR/apply-image-transform.py" "$pdf_image" "$UUID".content "$pdf_image"
-    PAGES+=($pdf_image)
+    PAGES+=("$pdf_image")
   done
 
   convert "${PAGES[@]}" "$UUID".pdf
