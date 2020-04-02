@@ -111,11 +111,28 @@ OUT_WIDTH="$RM_WIDTH"
 if [ -z "$IS_NOTEBOOK" ]; then
   PDF_DIMS=$(pdfinfo "$UUID".pdf | grep "Page size" | grep -Eo '[-+]?[0-9]*\.?[0-9]+' | tr '\n' ' ')
   OUT_WIDTH=$(echo $PDF_DIMS | awk -v height=$RM_HEIGHT '{print $1 / $2 * height}')
+  NUM_PAGES=$(pdfinfo "$UUID".pdf |grep Pages | awk '{print $2}')
 fi
 
-for lines_file in "$UUID"/*.rm; do
+for i in $(seq 0 $NUM_PAGES ); do 
+  lines_file="$UUID/$i.rm"
   svg_file=$(basename "$lines_file" .rm).svg
-  rM2svg --width=$OUT_WIDTH --coloured_annotations -i "./$lines_file" -o "./$svg_file"
+  if test -f "./$lines_file"; then
+	  rM2svg --width=$OUT_WIDTH --coloured_annotations -i "./$lines_file" -o "./$svg_file"
+  else 
+	  cat <<EOT >> "./$svg_file"
+<svg xmlns="http://www.w3.org/2000/svg" height="1872" width="10.0">
+        <script type="application/ecmascript"> <![CDATA[
+            var visiblePage = 'p1';
+            function goToPage(page) {
+                document.getElementById(visiblePage).setAttribute('style', 'display: none');
+                document.getElementById(page).setAttribute('style', 'display: inline');
+                visiblePage = page;
+            }
+        ]]> </script>
+    <g id="p1" style="display:inline"><rect x="0" y="0" width="$OUT_WIDTH" height="1872" fill-opacity="0"/></g></svg>
+EOT
+  fi
 done
 
 if [ $IS_TRANSFORMED = true ]; then
