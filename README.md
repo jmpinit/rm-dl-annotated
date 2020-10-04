@@ -10,7 +10,7 @@ and notes at a glance during review.
 
 It also works for notebooks.
 
-Tested with reMarkable tablet software version 2.0.2.0.
+Tested with reMarkable tablet software version 2.3.0.16.
 
 ## Example
 
