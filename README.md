@@ -28,7 +28,7 @@ All these things need to be on your path, and you need to have given `rmapi` acc
 * ImageMagick (`convert`)
 * pdfinfo (from poppler-utils)
 * pdfunite (from poppler-utils)
-* pdftk
+* qpdf
 * [rmapi](https://github.com/juruen/rmapi)
 * [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
 * [svgexport](https://github.com/shakiba/svgexport)
@@ -47,7 +47,7 @@ And the following Python libraries:
 On Ubuntu:
 
 ```
-sudo apt install imagemagick poppler-utils pdftk
+sudo apt install imagemagick poppler-utils qpdf
 pip install opencv-python numpy
 ```
 
