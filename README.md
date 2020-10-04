@@ -20,22 +20,39 @@ rm-dl-annotated.sh "/Super Cool Research Paper I Scribbled All Over"
 
 Generates `./"Super Cool Research Paper (exported).pdf"` with the scribbles on top of the original PDF.
 
-## Dependencies:
+## Dependencies
 
 All these things need to be on your path, and you need to have given `rmapi` access to your ReMarkable Cloud account:
 
 * python
 * ImageMagick (`convert`)
+* pdfinfo (from poppler-utils)
+* pdfunite (from poppler-utils)
+* qpdf
 * [rmapi](https://github.com/juruen/rmapi)
 * [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
 * [svgexport](https://github.com/shakiba/svgexport)
-* pdfinfo
-* pdfunite
-* pdftk
 
 If any of your PDFs have been cropped on your ReMarkable then you will also need:
 
-* opencv-python
-* numpy
-* pdftoppm
+* pdftoppm (from poppler-utils)
+
+And the following Python libraries:
+
+* [opencv-python](https://pypi.org/project/opencv-python/)
+* [numpy](https://numpy.org/)
+
+## Installation
+
+On Ubuntu:
+
+```
+sudo apt install imagemagick poppler-utils qpdf
+pip install opencv-python numpy
+```
+
+Follow the installation instructions on the project pages for
+[rmapi](https://github.com/juruen/rmapi),
+[rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg), and
+[svgexport](https://github.com/shakiba/svgexport).
 
