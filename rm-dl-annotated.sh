@@ -107,6 +107,7 @@ fi
 # Convert the lines file containing our scribbles to SVGs and then a PDF
 
 OUT_WIDTH="$RM_WIDTH"
+OUT_HEIGHT="$RM_HEIGHT"
 
 if [ -z "$IS_NOTEBOOK" ]; then
   PDF_DIMS=$(pdfinfo "$UUID".pdf | grep "Page size" | grep -Eo '[-+]?[0-9]*\.?[0-9]+' | tr '\n' ' ')
@@ -122,15 +123,8 @@ for i in $(seq 0 $NUM_PAGES ); do
   else 
 	  cat <<EOT >> "./$svg_file"
 <svg xmlns="http://www.w3.org/2000/svg" height="1872" width="10.0">
-        <script type="application/ecmascript"> <![CDATA[
-            var visiblePage = 'p1';
-            function goToPage(page) {
-                document.getElementById(visiblePage).setAttribute('style', 'display: none');
-                document.getElementById(page).setAttribute('style', 'display: inline');
-                visiblePage = page;
-            }
-        ]]> </script>
-    <g id="p1" style="display:inline"><rect x="0" y="0" width="$OUT_WIDTH" height="1872" fill-opacity="0"/></g></svg>
+    <g id="p1" style="display:inline"><rect x="0" y="0" width="$OUT_WIDTH" height="$OUT_HEIGHT" fill-opacity="0"/></g>
+</svg>
 EOT
   fi
 done
