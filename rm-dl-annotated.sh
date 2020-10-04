@@ -9,7 +9,7 @@
 # * svgexport https://github.com/shakiba/svgexport
 # * pdfinfo
 # * pdfunite
-# * pdftk
+# * qpdf
 # * pdftoppm (if you use cropping)
 
 set -o errexit
@@ -166,7 +166,7 @@ fi
 OUTPUT_PDF="$OBJECT_NAME (exported).pdf"
 if [ -z "$IS_NOTEBOOK" ]; then
   # Layer the annotations onto the original PDF
-  pdftk "$UUID".pdf multistamp "$PDF_ANNOTATIONS" output "$OUTPUT_PDF"
+  qpdf "$UUID".pdf --overlay "$PDF_ANNOTATIONS" -- "$OUTPUT_PDF"
 else
   cp "$PDF_ANNOTATIONS" "$OUTPUT_PDF"
 fi
