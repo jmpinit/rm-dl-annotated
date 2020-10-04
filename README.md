@@ -30,8 +30,8 @@ All these things need to be on your path, and you need to have given `rmapi` acc
 * pdfunite (from poppler-utils)
 * qpdf
 * [rmapi](https://github.com/juruen/rmapi)
-* [rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg)
 * [svgexport](https://github.com/shakiba/svgexport)
+* [rM2svg](https://github.com/delaere/maxio/blob/master/tools/rM2svg)
 
 If any of your PDFs have been cropped on your ReMarkable then you will also need:
 
@@ -41,6 +41,10 @@ And the following Python libraries:
 
 * [opencv-python](https://pypi.org/project/opencv-python/)
 * [numpy](https://numpy.org/)
+
+As of this writing [the reHackable rM2svg](https://github.com/reHackable/maxio/blob/a0a9d8291bd034a0114919bbf334973bbdd6a218/tools/rM2svg)
+hasn't been updated to support new versions of the .lines file format for new
+version of the ReMarkable tablet OS, so I suggest using [the fork by delaere](https://github.com/delaere/maxio/blob/master/tools/rM2svg).
 
 ## Installation
 
@@ -53,6 +57,7 @@ pip install opencv-python numpy
 
 Follow the installation instructions on the project pages for
 [rmapi](https://github.com/juruen/rmapi),
-[rM2svg](https://github.com/reHackable/maxio/blob/master/tools/rM2svg), and
-[svgexport](https://github.com/shakiba/svgexport).
+[rM2svg](https://github.com/delaere/maxio/blob/master/tools/rM2svg)
+(download the script and put it in a directory on your PATH like /usr/bin), and
+[svgexport](https://github.com/shakiba/svgexport). 
 
